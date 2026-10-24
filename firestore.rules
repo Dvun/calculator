@@ -1,0 +1,19 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedInAs(uid) {
+      return request.auth != null && request.auth.uid == uid;
+    }
+    // A user can only read or modify documents under their own UID.
+    match /users/{uid}/goals/{goalId} {
+      allow read, create, update, delete: if signedInAs(uid);
+    }
+    match /users/{uid}/journal/{journalId} {
+      allow read, create, update, delete: if signedInAs(uid);
+    }
+    match /users/{uid}/meta/{metaId} {
+      allow read, create, update, delete: if signedInAs(uid) && metaId == 'preferences';
+    }
+    // Everything else is denied by default.
+  }
+}

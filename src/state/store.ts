@@ -1,24 +1,21 @@
 import {create} from 'zustand';
-import {persist,createJSONStorage} from 'zustand/middleware';
 import type {DataState,Goal,JournalEntry,Settings,StakeConfig} from '../domain/types';
 import {normalizeStakeConfig} from '../domain/stakes';
 import {buildGoalPlan,completedGoalDates,round,validDate,validateGoal} from '../domain/finance';
 import {initialData,uuid} from './initial';
 
 const scoped=typeof window==='undefined'?'/':window.location.pathname.replace(/\/+$/,'').replace(/\/index\.html$/,'')||'/';
-// Keep the same key as v2.0: migration happens in place, preserving users' goal results.
 export const STORE_KEY=`yieldpilot-v2:${scoped}`;
 export const LEGACY_KEY=`yieldpilot-plan-v1:${scoped==='/'?'/':scoped.replace(/^\//,'')}`;
 const object=(v:unknown):v is Record<string,unknown>=>!!v&&typeof v==='object'&&!Array.isArray(v);
 const finite=(v:unknown,min=-1e12,max=1e12):v is number=>typeof v==='number'&&Number.isFinite(v)&&v>=min&&v<=max;
 
-// Whitelist only trading data. Old accounts, transactions, budgets and orphan notes are dropped.
+
 export function sanitizeData(raw:unknown):DataState|null{
  if(!object(raw)||!Array.isArray(raw.goals)||!Array.isArray(raw.journal)||raw.goals.length>500||raw.journal.length>10000)return null;
  const goals:Goal[]=[];
  for(const v of raw.goals){
   if(!object(v)||typeof v.id!=='string'||typeof v.name!=='string'||!finite(v.startAmount,0)||!finite(v.targetAmount,0)||!Number.isInteger(v.days)||!finite(v.days,1,730)||typeof v.startDate!=='string'||!Array.isArray(v.weekdays)||!object(v.results))return null;
-  // Non-trading savings plans are outside the new product; retained only in old backup.
   if(v.kind==='savings')continue;
   const g:Goal={id:v.id.slice(0,100),name:v.name.slice(0,120),startAmount:v.startAmount,targetAmount:v.targetAmount,days:v.days,startDate:v.startDate,mode:v.mode==='fixed'?'fixed':'adaptive',weekdays:v.weekdays.filter(n=>Number.isInteger(n)&&n>=0&&n<=6),results:{},createdAt:typeof v.createdAt==='string'?v.createdAt:new Date().toISOString(),stakeConfig:normalizeStakeConfig(v.stakeConfig)};
   if(validateGoal(g))continue;
@@ -36,7 +33,21 @@ export function sanitizeData(raw:unknown):DataState|null{
  return {goals,activeGoalId,journal,settings};
 }
 export function legacyData():DataState|null{try{const raw=localStorage.getItem(LEGACY_KEY);if(!raw)return null;const data=JSON.parse(raw) as unknown;if(!object(data)||data.version!==1||!object(data.config)||!object(data.results))return null;const c=data.config;const g:Goal={id:uuid(),name:'Цель из YieldPilot 1.x',startAmount:Number(c.startAmount),targetAmount:Number(c.targetAmount),days:Number(c.days),startDate:String(c.startDate),mode:c.mode==='fixed'?'fixed':'adaptive',weekdays:[0,1,2,3,4,5,6],results:{},createdAt:new Date().toISOString()};if(validateGoal(g))return null;let bal=g.startAmount;for(let d=1;d<=g.days;d++){const r=data.results[String(d)];if(!object(r)||!finite(r.profit)||typeof r.recordedAt!=='string')break;bal=round(bal+r.profit);if(bal<0)break;g.results[d]={value:round(r.profit),recordedAt:r.recordedAt};}return {...initialData(),goals:[g],activeGoalId:g.id};}catch{return null;}}
-function boot():DataState{if(typeof localStorage==='undefined')return initialData();try{if(localStorage.getItem(STORE_KEY))return initialData();return legacyData()??initialData();}catch{return initialData();}}
+/** Existing browser-only data is deliberately NOT loaded before authentication. */
+export function legacyLocalCandidate():DataState|null{
+ if(typeof localStorage==='undefined')return null;
+ try{
+  const prior=localStorage.getItem(STORE_KEY);
+  if(prior){
+   const parsed=JSON.parse(prior) as unknown;
+   if(object(parsed)&&object(parsed.state)){
+    const restored=sanitizeData(parsed.state);
+    if(restored&&(restored.goals.length>0||restored.journal.length>0))return restored;
+   }
+  }
+  return legacyData();
+ }catch{return legacyData();}
+}
 interface Actions{
  setActiveGoal:(id:string|null)=>void;upsertGoal:(g:Goal)=>void;deleteGoal:(id:string)=>void;updateStakeConfig:(goalId:string,patch:Partial<StakeConfig>)=>void;
  recordDay:(goalId:string,day:number,value:number,note?:string)=>string|null;undoDay:(goalId:string,day:number)=>string|null;
@@ -44,8 +55,7 @@ interface Actions{
  updateSettings:(patch:Partial<Settings>)=>void;replaceData:(next:DataState)=>void;resetEverything:()=>void;
 }
 export type PlannerStore=DataState&Actions;
-const data=boot();
-export const usePlanner=create<PlannerStore>()(persist((set,get)=>({...data,
+export const usePlanner=create<PlannerStore>()((set,get)=>({...initialData(),
  setActiveGoal:id=>set(s=>({activeGoalId:s.goals.some(g=>g.id===id)?id:s.activeGoalId})),
  updateStakeConfig:(goalId,patch)=>set(s=>({goals:s.goals.map(g=>g.id!==goalId?g:{...g,stakeConfig:normalizeStakeConfig({...normalizeStakeConfig(g.stakeConfig),...patch})})})),
  upsertGoal:g=>set(s=>{const goals=s.goals.some(x=>x.id===g.id)?s.goals.map(x=>x.id===g.id?g:x):[...s.goals,g];const validDates=new Set(completedGoalDates(g));return {goals,activeGoalId:s.activeGoalId??g.id,journal:s.journal.filter(j=>j.goalId!==g.id||validDates.has(j.date))};}),
@@ -56,7 +66,7 @@ export const usePlanner=create<PlannerStore>()(persist((set,get)=>({...data,
  deleteJournal:id=>set(s=>({journal:s.journal.filter(j=>j.id!==id)})),
  updateSettings:patch=>set(s=>({settings:{...s.settings,...patch}})),
  replaceData:next=>set(sanitizeData(next)??initialData()),resetEverything:()=>set(initialData()),
-}),{name:STORE_KEY,version:4,storage:createJSONStorage(()=>localStorage),partialize:s=>({goals:s.goals,activeGoalId:s.activeGoalId,journal:s.journal,settings:s.settings}),migrate:persisted=>sanitizeData(persisted)??initialData(),merge:(persisted,current)=>({...current,...(sanitizeData(persisted)??initialData())})}));
+}));
 export const getSnapshot=():DataState=>{const s=usePlanner.getState();return {goals:s.goals,activeGoalId:s.activeGoalId,journal:s.journal,settings:s.settings};};
 export const makeBackup=():string=>JSON.stringify({format:'yieldpilot-trading-backup',version:4,exportedAt:new Date().toISOString(),data:getSnapshot()},null,2);
 export function readBackup(value:unknown):DataState|null{if(!object(value))return null;if((value.format==='yieldpilot-trading-backup'&&(value.version===3||value.version===4))||(value.format==='yieldpilot-backup'&&value.version===2))return sanitizeData(value.data);if('goals'in value)return sanitizeData(value);if(value.version===1&&object(value.config)&&object(value.results)){const c=value.config;const g:Goal={id:uuid(),name:'Импортированная торговая цель',startAmount:Number(c.startAmount),targetAmount:Number(c.targetAmount),days:Number(c.days),startDate:String(c.startDate),mode:c.mode==='fixed'?'fixed':'adaptive',weekdays:[0,1,2,3,4,5,6],results:{},createdAt:new Date().toISOString()};if(validateGoal(g))return null;let bal=g.startAmount;for(let d=1;d<=g.days;d++){const r=value.results[String(d)];if(!object(r)||!finite(r.profit)||typeof r.recordedAt!=='string')break;bal=round(bal+r.profit);if(bal<0)break;g.results[d]={value:round(r.profit),recordedAt:r.recordedAt};}return {...initialData(),goals:[g],activeGoalId:g.id};}return null;}
