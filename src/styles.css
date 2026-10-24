@@ -49,23 +49,90 @@ a{color:inherit}
 .offline-chip{font-size:9px;letter-spacing:1px;background:#112923;border:1px solid #255342;padding:8px 10px;border-radius:20px;color:#8cdec0}
 .main-content{width:100%;max-width:1800px;margin:0 auto;padding:26px 34px 42px;flex:1}
 .page-heading{display:flex;justify-content:space-between;align-items:center;gap:18px;margin:0 0 24px}
-.eyebrow{display:flex;align-items:center;gap:7px;color:var(--green);font-weight:800;font-size:10px;letter-spacing:1.5px;margin-bottom:8px}
-.page-heading h1{font-size:clamp(26px,2.6vw,36px);font-weight:800;letter-spacing:-1.15px}
+
+.eyebrow {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    color: var(--green);
+    font-weight: 600;
+    font-size: 8px;
+    letter-spacing: 1.5px;
+    margin-bottom: 8px
+}
+
+.page-heading h1{
+    font-size: clamp(26px, 2.6vw, 26px);
+    font-weight: 700;
+    letter-spacing: -1.15px
+}
+
 .page-heading p{color:var(--muted);font-size:12px;line-height:1.5;margin-top:8px}
 .heading-action{flex:none}
 .site-footer{padding:18px 35px;display:flex;justify-content:space-between;gap:15px;border-top:1px solid #1d2d32;color:#5f7c7f;font-size:10px}
-.metrics-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:13px;margin-bottom:17px}
-.metrics-grid.three{grid-template-columns:repeat(3,minmax(0,1fr))}
-.metrics-grid.within{margin:0 0 18px}
-.metric{background:linear-gradient(155deg,#132329,#101a20 65%);border:1px solid var(--border);border-radius:14px;min-width:0;padding:18px 20px;min-height:119px}
-.metric-green{background:linear-gradient(120deg,#18332a,#101c21 85%);border-color:#285240}
-.metric-red{background:linear-gradient(135deg,#2a2225,#111b21 84%)}
-.metric-blue{background:linear-gradient(135deg,#192b36,#111b21 80%)}
-.metric-label{display:flex;align-items:center;justify-content:space-between;gap:6px;color:#a3b1b5;letter-spacing:1px;font-size:10px;font-weight:800;text-transform:uppercase;margin-bottom:13px}
+
+.metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 13px;
+    margin-bottom: 17px
+}
+
+.metrics-grid.three {
+    grid-template-columns: repeat(3, minmax(0, 1fr))
+}
+
+.metrics-grid.within {
+    margin: 0 0 18px
+}
+
+.metric {
+    background: linear-gradient(155deg, #132329, #101a20 65%);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    min-width: 0;
+    padding: 8px 8px;
+    min-height: 80px
+}
+
+.metric-green {
+    background: linear-gradient(120deg, #18332a, #101c21 85%);
+    border-color: #285240
+}
+
+.metric-red {
+    background: linear-gradient(135deg, #2a2225, #111b21 84%)
+}
+
+.metric-blue {
+    background: linear-gradient(135deg, #192b36, #111b21 80%)
+}
+
+.metric-label {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+    color: #a3b1b5;
+    letter-spacing: 1px;
+    font-size: 10px;
+    font-weight: 800;
+    text-transform: uppercase;
+    margin-bottom: 13px
+}
+
 .metric-label svg{color:var(--green)}
 .metric-red .metric-label svg{color:var(--red)}
 .metric-blue .metric-label svg{color:var(--blue)}
-.metric strong{display:block;font-size:clamp(20px,2.2vw,28px);font-weight:800;letter-spacing:-.7px;overflow-wrap:anywhere}
+
+.metric strong {
+    display: block;
+    font-size: clamp(5px, 2.2vw, 25px);
+    font-weight: 600;
+    letter-spacing: -.7px;
+    overflow-wrap: anywhere
+}
+
 .metric-green>strong{color:var(--green)}
 .metric-red>strong{color:var(--red)}
 .metric-blue>strong{color:var(--blue)}
@@ -452,3 +519,298 @@ input[type=color]{width:64px;height:41px;padding:4px}
 .cloud-user{display:inline-flex;align-items:center;gap:8px;font-size:11px;color:#a4c5b7;max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.cloud-actions{display:flex;gap:8px;align-items:center}.cloud-actions button{display:inline-flex;gap:6px;align-items:center;background:#193027;border:1px solid #33584a;color:#9de6be;border-radius:8px;cursor:pointer;padding:7px 9px;font-size:11px}.cloud-actions button:hover{background:#27503b}.cloud-error{color:#f0a09b}.cloud-ready{color:#95deba}.cloud-import{display:flex;align-items:center;flex-wrap:wrap;gap:12px;background:#16332a;border:1px solid #3d7757;border-radius:12px;padding:15px;margin:0 0 20px;color:#bee4cb;font-size:12px}.cloud-import strong{color:#e8fcf2}.cloud-import button{margin-left:auto;background:#72dca6;border:0;border-radius:8px;padding:9px 13px;color:#092c1e;font-weight:800;cursor:pointer}.cloud-import button:disabled{opacity:.6}
 @media(max-width:850px){.cloud-user{display:none}.cloud-actions button{font-size:10px}.save-indicator{display:none}}
 @media(max-width:500px){.auth-card{padding:23px}.cloud-actions button{padding:7px}.cloud-import button{margin-left:0}}
+
+/* YieldPilot 2.3.1 — approved compact trading workspace and risk workbench */
+.app-layout:not(.sidebar-small) .sidebar{width:390px;flex-basis:390px}
+.sidebar{overflow:hidden}
+.sidebar-scroll{min-height:0;flex:1;display:flex;flex-direction:column;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:#365249 transparent}
+.sidebar-scroll nav{padding:12px 13px 0;overflow:visible;flex:none}
+.sidebar-scroll .nav-group{padding-bottom:10px;margin-bottom:10px;border-bottom:1px solid #24363a}
+.sidebar-scroll .nav-label{margin:5px 7px 12px}
+.sidebar-scroll .nav-link{padding:10px 11px;font-size:12px;min-height:39px}
+.sidebar-scroll .sidebar-bottom{padding:16px 19px 21px;flex:none;margin-top:auto;border-top:0}
+.sidebar-scroll .sidebar-bottom small{margin-top:6px;line-height:1.5}
+.sidebar-calculator{padding:0 12px;flex:none;min-width:0}
+.sidebar-small .sidebar-scroll nav{padding:13px 8px 0}
+.sidebar-small .sidebar-scroll .sidebar-bottom{border-top:1px solid #203036;padding:20px 25px}
+
+/* Tight goal heading, without the duplicate page title already in the top bar */
+.main-content{padding:21px 26px 34px}
+.goal-workspace-head{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:17px;min-width:0}
+.goal-workspace-title{min-width:0}
+.goal-workspace-title h1{font-size:22px;font-weight:750;line-height:1.2;letter-spacing:-.65px;overflow-wrap:anywhere}
+.goal-workspace-title p{color:#8ea6a6;font-size:11px;line-height:1.45;margin-top:6px}
+.goal-header-actions{display:flex;gap:7px;align-items:center;flex:none}
+.goal-header-actions .btn{padding:8px 11px;min-height:34px;font-size:11px;border-radius:9px;gap:6px}
+.goal-header-actions .btn svg{width:14px;height:14px}
+.goal-selector-compact{display:flex;align-items:center;gap:9px}
+.goal-selector-compact label{font-size:10px;white-space:nowrap;color:#87ac9b;font-weight:700}
+.goal-selector-compact select{max-width:340px;width:auto;min-width:150px;font-size:16px;font-weight:750;padding:6px 27px 6px 9px;background:#11221e;border-color:#2d5144}
+.goal-empty-layout{margin:8vh auto 0;max-width:560px}
+.metrics-grid{gap:11px;margin-bottom:14px}
+.metrics-grid .metric{padding:13px 14px;min-height:103px;border-radius:12px}
+.metrics-grid .metric-label{font-size:9px;letter-spacing:.5px;margin-bottom:10px}
+.metrics-grid .metric-label svg{width:16px;height:16px}
+.metrics-grid .metric strong{font-size:clamp(18px,1.9vw,25px);line-height:1.16;font-weight:700}
+.metrics-grid .metric small{font-size:10px;margin-top:7px}
+.goals-charts{gap:13px;grid-template-columns:minmax(0,1.45fr) minmax(280px,.95fr)}
+.goals-charts .panel{padding:17px 17px;margin-bottom:14px}
+.goals-charts .panel-head{margin-bottom:13px}
+.goals-charts .panel-head h2{font-size:14px}
+.goals-charts .chart-area{height:250px}
+.goals-charts .goal-progress-big{grid-template-columns:122px minmax(0,1fr);gap:13px;padding:12px 0}
+.goals-charts .circle-progress{width:118px;height:118px}
+.goals-charts .circle-progress>div{width:94px;height:94px}
+.goals-charts .circle-progress strong{font-size:23px}
+.goals-charts .progress-stats>div{padding:8px 0;font-size:10px}
+.goals-charts .progress-stats strong{font-size:11px}
+.density-relaxed .metrics-grid .metric{padding:13px 14px}
+.density-relaxed .goals-charts .panel{padding:17px}
+
+/* Sidebar stake calculator: one instance per selected goal, shared with Zustand */
+.sidebar-calculator .stake-planner-sidebar{padding:11px 11px 10px;margin:0;border:1px solid #295145;border-radius:13px;background:linear-gradient(154deg,#122923 0%,#0e1d22 55%,#0c171b 100%);box-shadow:inset 0 1px 0 #91fbc309,0 9px 26px #0002}
+.sidebar-calculator .stake-planner-sidebar .panel-head{gap:4px;align-items:center;margin-bottom:10px;min-height:23px}
+.sidebar-calculator .stake-planner-sidebar .panel-head h2{font-size:12px;font-weight:800;letter-spacing:-.25px;line-height:1.25}
+.sidebar-calculator .stake-header-actions{flex:none;gap:0}
+.sidebar-calculator .stake-collapse{font-size:0;width:25px;height:25px;min-width:25px;padding:0;border:0;background:transparent;color:#91ecb8;justify-content:center;border-radius:6px}
+.sidebar-calculator .stake-collapse svg{width:17px;height:17px}
+.sidebar-calculator .stake-collapse:hover{background:#1a4937}
+.sidebar-calculator .stake-head{margin-bottom:10px;gap:4px}
+.sidebar-calculator .stake-modes{display:flex;width:100%;padding:3px;gap:3px}
+.sidebar-calculator .stake-modes button{flex:1;padding:7px 5px;font-size:10px;border-radius:7px;line-height:1.2}
+.sidebar-calculator .stake-input-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px 10px;margin-bottom:10px}
+.sidebar-calculator .stake-field{gap:5px;font-size:9.5px;line-height:1.3;font-weight:650}
+.sidebar-calculator .stake-field>span{line-height:1.3;min-height:12px}
+.sidebar-calculator .stake-field input,.sidebar-calculator .stake-field select{height:32px;padding:5px 9px;font-size:12px;border-radius:7px;font-weight:700}
+.sidebar-calculator .stake-field>small{display:none}
+.sidebar-calculator .stake-summary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:0;overflow:hidden;margin:0 0 10px;border:1px solid #294c46;border-radius:9px;background:#112b29}
+.sidebar-calculator .stake-summary>div{border:0;border-radius:0;padding:8px 7px 9px;background:transparent;min-height:53px}
+.sidebar-calculator .stake-summary>div:not(:nth-child(3n)){border-right:1px solid #294943}
+.sidebar-calculator .stake-summary>div:nth-child(-n+3){border-bottom:1px solid #294943}
+.sidebar-calculator .stake-summary small{font-size:8px;line-height:1.22;min-height:20px;margin-bottom:2px;display:block;color:#9bb6ad}
+.sidebar-calculator .stake-summary strong{font-size:14px;letter-spacing:-.2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;overflow-wrap:normal;line-height:1.3}
+.sidebar-calculator .stake-table-scroll{border-radius:9px;border-color:#304944;max-width:100%;overflow-x:auto}
+.sidebar-calculator .stake-table{width:100%;min-width:0;table-layout:fixed;font-size:10px;white-space:nowrap}
+.sidebar-calculator .stake-table th,.sidebar-calculator .stake-table td{padding:7px 4px;text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sidebar-calculator .stake-table th{font-size:8px;letter-spacing:0;color:#96afb0;line-height:1.2;white-space:normal;vertical-align:bottom}
+.sidebar-calculator .stake-table th:nth-child(1){width:9%}
+.sidebar-calculator .stake-table th:nth-child(2){width:19%}
+.sidebar-calculator .stake-table th:nth-child(3){width:22%}
+.sidebar-calculator .stake-table th:nth-child(4){width:24%}
+.sidebar-calculator .stake-table th:nth-child(5){width:26%}
+.sidebar-calculator .stake-table td:first-child b{font-size:9px}
+.sidebar-calculator .stake-table .stake-manual-cell{min-width:0;gap:1px}
+.sidebar-calculator .stake-table .stake-manual-cell .stake-field{width:100%;min-width:0}
+.sidebar-calculator .stake-table .stake-manual-cell input{height:26px;font-size:10px;text-align:right;padding:2px 3px}
+.sidebar-calculator .stake-table .stake-manual-cell button{width:20px;min-width:20px;height:24px}
+.sidebar-calculator .stake-table .stake-manual-cell button svg{width:11px}
+.sidebar-calculator .stake-manual{display:block;padding:9px;margin-bottom:9px}
+.sidebar-calculator .stake-manual .stake-field{width:100%}
+.sidebar-calculator .stake-manual>span{display:block;margin-top:7px;font-size:9px}
+.stake-sidebar-alert{display:flex;align-items:center;gap:7px;padding:8px 9px;margin-top:9px;border-radius:8px;font-size:10px;line-height:1.35;border:1px solid #326349;background:linear-gradient(100deg,#15372b,#102421);color:#9debc0}
+.stake-sidebar-alert svg{flex:none}
+.stake-sidebar-alert.danger{border-color:#784c42;background:linear-gradient(100deg,#3a2525,#251d20);color:#ffada1}
+.stake-sidebar-alert.ok{border-color:#39634b}
+.stake-sidebar-extra{margin-top:9px;border-top:1px solid #29403d;padding-top:8px}
+.stake-sidebar-extra summary{cursor:pointer;color:#94cbb5;font-size:10px;font-weight:700;list-style-position:inside}
+.stake-sidebar-extra[open] summary{margin-bottom:11px}
+.stake-sidebar-extra p{font-size:9px;line-height:1.5;color:#91aaa7;margin:7px 0}
+.stake-sidebar-extra .stake-extra-warning{color:#ffbcaa}
+.stake-sidebar-reset{font-size:10px;margin-top:8px}
+.sidebar-calculator .stake-collapsed .panel-head{margin:0}
+.sidebar-calculator .stake-collapsed .stake-compact-line{display:none}
+.sidebar-small .sidebar-calculator{display:none}
+
+@media(max-width:1500px){
+ .app-layout:not(.sidebar-small) .sidebar{width:364px;flex-basis:364px}
+ .main-content{padding-left:21px;padding-right:21px}
+ .goals-charts{grid-template-columns:minmax(0,1.2fr) minmax(250px,.95fr)}
+ .goals-charts .goal-progress-big{grid-template-columns:1fr;justify-items:center;padding:8px 0}
+ .goals-charts .progress-stats{width:100%}
+}
+@media(max-width:1160px){
+ .goals-charts{grid-template-columns:1fr}
+ .goals-charts .goal-progress-big{grid-template-columns:125px 1fr;justify-items:stretch}
+ .metrics-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .metrics-grid .metric strong{font-size:23px}
+}
+/* Tablet and phone: the workbench becomes a scrollable drawer instead of shrinking charts. */
+@media(max-width:960px){
+ .sidebar,.app-layout:not(.sidebar-small) .sidebar{position:fixed;left:0;top:0;transform:translateX(-110%);width:min(390px,calc(100vw - 24px))!important;flex-basis:auto!important;height:100dvh;min-height:0;transition:transform .2s ease;z-index:20}
+ .sidebar.mobile-open{transform:translateX(0)}
+ .mobile-scrim{display:block;position:fixed;inset:0;background:#000b;border:0;z-index:19}
+ .mobile-menu{display:grid}
+ .sidebar-small .sidebar .nav-link{justify-content:flex-start}
+ .sidebar-small .sidebar-calculator{display:none}
+ .topbar{height:58px}
+ .sidebar-scroll nav{padding:12px 13px 0}
+}
+@media(max-width:640px){
+ .main-content{padding:17px 13px 26px}
+ .goal-workspace-head{align-items:flex-start;flex-wrap:wrap;gap:12px}
+ .goal-workspace-title h1{font-size:20px}
+ .goal-header-actions{width:100%;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+ .goal-header-actions .btn{width:100%;padding:8px 4px;font-size:10px;min-height:33px}
+ .goal-header-actions .btn svg{width:13px}
+ .goal-selector-compact{align-items:flex-start;flex-direction:column;gap:4px}
+ .goal-selector-compact select{max-width:100%;width:100%}
+ .metrics-grid{gap:8px}
+ .metrics-grid .metric{min-height:94px;padding:11px 10px}
+ .metrics-grid .metric strong{font-size:20px}
+ .goals-charts .goal-progress-big{grid-template-columns:1fr;justify-items:center}
+ .goals-charts .progress-stats{width:100%}
+ .goals-charts .chart-area{height:228px}
+}
+@media(max-width:390px){.goal-header-actions .btn{font-size:9px;gap:3px}.sidebar-calculator{padding:0 9px}.sidebar-calculator .stake-summary strong{font-size:12px}}
+
+/* YieldPilot 2.3.2: compact calendar and journal workspaces */
+.workspace-toolbar{
+ display:flex;align-items:center;justify-content:space-between;gap:12px;
+ padding:10px 13px;margin:0 0 15px;min-height:58px;
+ background:linear-gradient(110deg,#13262a,#101d22);border:1px solid #294540;
+ border-radius:12px;
+}
+.workspace-toolbar-primary{display:flex;align-items:center;gap:10px;min-width:0;flex:1}
+.workspace-toolbar-primary label{flex:none;font-size:11px;font-weight:750;color:#93bdb0;white-space:nowrap}
+.workspace-toolbar-primary select{min-width:135px;width:min(390px,100%);max-width:100%;height:35px;padding:6px 30px 6px 10px;border-color:#355549;background:#0c181d;border-radius:8px;font-size:12px}
+.workspace-toolbar-count{flex:none;color:#809fa0;font-size:10px;white-space:nowrap}
+.workspace-toolbar .month-nav{flex:none;gap:7px}
+.workspace-toolbar .month-nav button{width:33px;height:33px;border-radius:8px;color:#a9e8ca;background:#1c3334}
+.workspace-toolbar .month-nav input{height:35px;width:165px;padding:6px 10px;font-size:12px;border-radius:8px}
+.workspace-toolbar .workspace-toolbar-button{flex:none;min-height:35px;padding:7px 11px;font-size:11px;border-radius:8px;gap:6px}
+.workspace-toolbar .workspace-toolbar-button svg{width:15px;height:15px}
+.calendar-toolbar+.calendar-layout .panel-head,.journal-toolbar+.panel .panel-head{margin-bottom:14px}
+.calendar-toolbar+.calendar-layout .panel,.journal-toolbar+.panel{padding-top:17px}
+@media(max-width:1400px){
+ .workspace-toolbar{flex-wrap:wrap}
+ .workspace-toolbar .month-nav{margin-left:auto}
+}
+@media(max-width:760px){
+ .workspace-toolbar{padding:10px;gap:10px}
+ .workspace-toolbar-primary{flex:1 1 100%;flex-wrap:wrap;gap:7px}
+ .workspace-toolbar-primary label{width:100%}
+ .workspace-toolbar-primary select{flex:1;min-width:0;width:auto}
+ .workspace-toolbar-count{flex:none}
+ .workspace-toolbar .month-nav{margin-left:0}
+ .journal-toolbar .workspace-toolbar-button{margin-left:auto}
+}
+@media(max-width:430px){
+ .workspace-toolbar .month-nav{width:100%;justify-content:space-between}
+ .workspace-toolbar .month-nav input{flex:1;width:0}
+ .workspace-toolbar-primary select{flex-basis:100%}
+ .workspace-toolbar-count{margin-top:2px}
+}
+
+
+/* YieldPilot 2.3.3 — approved dense goal dashboard.
+   Only the Goals page is affected. Sidebar stake calculator and other pages retain their layouts. */
+.goal-metrics-grid{gap:10px;margin-bottom:11px}
+.goal-metrics-grid .metric{
+  min-height:73px;
+  padding:9px 11px;
+  border-radius:10px;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+}
+.goal-metrics-grid .metric-label{
+  font-size:9px;
+  line-height:1.15;
+  letter-spacing:.35px;
+  margin-bottom:4px;
+}
+.goal-metrics-grid .metric-label svg{width:14px;height:14px;flex:none}
+.goal-metrics-grid .metric strong{
+  font-size:clamp(16px,1.3vw,20px);
+  line-height:1.12;
+  letter-spacing:-.35px;
+}
+.goal-metrics-grid .metric small{
+  font-size:9px;
+  line-height:1.15;
+  margin-top:4px;
+}
+/* The compact graphs do not have a large empty area beneath the plotted data. */
+.goals-charts{gap:11px;margin-bottom:11px}
+.goals-charts>.panel{
+  height:auto;
+  min-height:0;
+  margin:0;
+  padding:13px 15px;
+  border-radius:12px;
+}
+.goals-charts .panel-head{margin-bottom:8px;gap:8px}
+.goals-charts .panel-head h2{font-size:13px}
+.goals-charts .panel-head p{font-size:10px;margin-top:3px}
+.goals-charts .chart-area{height:188px}
+.goals-charts .goal-progress-big{
+  display:grid;
+  grid-template-columns:102px minmax(0,1fr);
+  gap:10px;
+  padding:4px 0;
+  justify-items:stretch;
+}
+.goals-charts .circle-progress{width:100px;height:100px}
+.goals-charts .circle-progress>div{width:78px;height:78px}
+.goals-charts .circle-progress strong{font-size:20px}
+.goals-charts .circle-progress span{font-size:9px;margin-top:2px}
+.goals-charts .progress-stats{width:100%;min-width:0}
+.goals-charts .progress-stats>div{padding:5px 0;gap:7px;font-size:10px}
+.goals-charts .progress-stats strong{font-size:10px;white-space:nowrap}
+/* Exactly twelve standard-size day rows fit before the internal vertical scrollbar. */
+.daily-plan{padding:13px 15px 10px;margin-bottom:12px;border-radius:12px}
+.daily-plan .panel-head{margin-bottom:9px}
+.daily-plan .panel-head h2{font-size:14px}
+.daily-plan .panel-head p{font-size:10px;margin-top:3px}
+.daily-plan .table-filters{margin-bottom:8px}
+.daily-plan .segmented button{padding:7px 10px;font-size:10px}
+.daily-plan .search-wrap{height:32px}
+.daily-plan .table-scroll{
+  max-height:441px; /* 31px header + 12 × 34px rows + borders */
+  overflow-x:auto;
+  overflow-y:auto;
+  overscroll-behavior:contain;
+  scrollbar-gutter:stable;
+}
+.daily-plan .table-scroll table{font-size:10px}
+.daily-plan .table-scroll thead th{
+  height:31px;
+  padding:7px 9px;
+  font-size:8px;
+  background:#132027;
+  position:sticky;
+  top:0;
+  z-index:2;
+}
+.daily-plan .table-scroll tbody tr{height:34px}
+.daily-plan .table-scroll tbody td{
+  height:34px;
+  padding:3px 9px;
+  line-height:1.16;
+}
+.daily-plan .table-scroll tbody td strong{font-size:10px;line-height:1.14}
+.daily-plan .table-scroll tbody td small{font-size:9px;line-height:1.1;margin-top:2px}
+.daily-plan .table-scroll .pill{padding:4px 7px;font-size:9px}
+.daily-plan .table-scroll .small-link{padding:5px 7px;font-size:9px}
+.daily-plan .table-foot{padding-top:9px}
+/* Keep density preference from unexpectedly re-expanding the goals dashboard. */
+.density-relaxed .goal-metrics-grid .metric{padding:9px 11px;min-height:73px}
+.density-relaxed .goals-charts>.panel{padding:13px 15px}
+.density-relaxed .daily-plan .table-scroll tbody td{padding:3px 9px}
+@media(max-width:1160px){
+  .goals-charts{grid-template-columns:1fr}
+  .goals-charts .goal-progress-big{grid-template-columns:102px minmax(0,1fr)}
+  .goal-metrics-grid .metric strong{font-size:19px}
+}
+@media(max-width:640px){
+  .goal-metrics-grid{gap:8px}
+  .goal-metrics-grid .metric{min-height:72px;padding:8px 9px}
+  .goal-metrics-grid .metric-label{font-size:8px;letter-spacing:0}
+  .goal-metrics-grid .metric strong{font-size:17px}
+  .goal-metrics-grid .metric small{font-size:8px}
+  .goals-charts .chart-area{height:185px}
+  .goals-charts .goal-progress-big{grid-template-columns:1fr;justify-items:center}
+  .goals-charts .progress-stats{width:100%}
+  .daily-plan{padding:12px 10px 9px}
+  .daily-plan .table-scroll{scrollbar-gutter:auto}
+}

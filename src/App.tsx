@@ -1,11 +1,13 @@
-import {useEffect,useState} from 'react';
+import {useEffect,useMemo,useState} from 'react';
 import {onAuthStateChanged,signOut,type User} from 'firebase/auth';
-import {Activity,BookOpen,CalendarDays,ChartNoAxesCombined,ChevronLeft,ChevronRight,Cloud,CloudAlert,Download,LogOut,LockKeyhole,Menu,RefreshCw,ShieldCheck,Target} from 'lucide-react';
+import {Activity,BookOpen,CalendarDays,ChartNoAxesCombined,ChevronLeft,ChevronRight,Cloud,LogOut,LockKeyhole,Menu,RefreshCw,ShieldCheck,Target} from 'lucide-react';
 import type {LucideIcon} from 'lucide-react';
 import type {Page} from './domain/types';
 import {NotifyProvider} from './components/UI';
 import {AuthGate} from './components/AuthGate';
 import {initialData} from './state/initial';
+import {buildGoalPlan} from './domain/finance';
+import {StakePlanner} from './components/StakePlanner';
 import {STORE_KEY, legacyLocalCandidate, usePlanner} from './state/store';
 import {endCloud,flushCloud,refreshCloud,startCloud,useCloudStatus} from './services/cloudSync';
 import {firebaseAuth,firebaseConfigured} from './services/firebase';
@@ -29,7 +31,11 @@ function AppContent({user,showImport,onImport,onRejectImport}:{user:User;showImp
  const [actionError,setActionError]=useState('');
  const cloud=useCloudStatus();
  const dense=usePlanner(s=>s.settings.compact);
- const goalsCount=usePlanner(s=>s.goals.length);
+ const goals=usePlanner(s=>s.goals);
+ const activeGoalId=usePlanner(s=>s.activeGoalId);
+ const goalsCount=goals.length;
+ const selectedGoal=goals.find(g=>g.id===activeGoalId)??goals[0];
+ const sidebarPlan=useMemo(()=>selectedGoal?buildGoalPlan(selectedGoal):null,[selectedGoal]);
  const navigate=(next:Page)=>{setPage(next);setMobileOpen(false);window.scrollTo({top:0,behavior:'instant'});};
  useEffect(()=>{document.title=`${titles[page]} · YieldPilot`;},[page]);
  useEffect(()=>{
@@ -58,11 +64,16 @@ function AppContent({user,showImport,onImport,onRejectImport}:{user:User;showImp
     <span className="brand-mark"><ChartNoAxesCombined size={23}/></span>
     {!compact&&<span className="brand-text"><strong>Yield<span>Pilot</span></strong><small>TRADING · CLOUD</small></span>}
    </div><button type="button" className="sidebar-collapse" onClick={()=>setCompact(v=>!v)} title="Свернуть меню" aria-label={compact?'Развернуть меню':'Свернуть меню'}>{compact?<ChevronRight size={17}/>:<ChevronLeft size={17}/>}</button></div>
-   <nav aria-label="Разделы приложения"><div className="nav-group">
-    {!compact&&<div className="nav-label">ТРЕЙДИНГ</div>}
-    {NAV.map(item=><button key={item.key} type="button" className={`nav-link ${page===item.key?'active':''}`} onClick={()=>navigate(item.key)}><item.icon size={19}/>{!compact&&<span>{item.label}</span>}{!compact&&item.key==='goals'&&goalsCount>0&&<span className="nav-count">{goalsCount}</span>}</button>)}
-   </div></nav>
-   <div className="sidebar-bottom"><div className="privacy-label"><ShieldCheck size={16}/>{!compact&&<span>Облачное хранение</span>}</div>{!compact&&<small>Цели и дневник изолированы по аккаунту. Сохраняются в Firebase Firestore.</small>}</div>
+   <div className="sidebar-scroll">
+    <nav aria-label="Разделы приложения"><div className="nav-group">
+     {!compact&&<div className="nav-label">ТРЕЙДИНГ</div>}
+     {NAV.map(item=><button key={item.key} type="button" className={`nav-link ${page===item.key?'active':''}`} onClick={()=>navigate(item.key)}><item.icon size={19}/>{!compact&&<span>{item.label}</span>}{!compact&&item.key==='goals'&&goalsCount>0&&<span className="nav-count">{goalsCount}</span>}</button>)}
+    </div></nav>
+    {!compact&&selectedGoal&&sidebarPlan&&<div className="sidebar-calculator" aria-label={`Калькулятор ставок для цели ${selectedGoal.name}`}>
+     <StakePlanner key={selectedGoal.id} goal={selectedGoal} plan={sidebarPlan} variant="sidebar"/>
+    </div>}
+    <div className="sidebar-bottom"><div className="privacy-label"><Cloud size={17}/>{!compact&&<span>Облачное хранилище</span>}</div>{!compact&&<small>Данные синхронизированы с Firebase. Каждый аккаунт хранит свои цели.</small>}</div>
+   </div>
   </aside>
   <div className="app-body">
    <header className="topbar"><div className="topbar-left"><button type="button" className="mobile-menu icon-btn" onClick={()=>setMobileOpen(true)} aria-label="Открыть меню"><Menu size={20}/></button><Activity size={18} className="breadcrumb-logo"/><span className="topbar-muted">YieldPilot</span><ChevronRight size={15} className="topbar-chevron"/><strong>{titles[page]}</strong></div>
