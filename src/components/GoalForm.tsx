@@ -1,64 +1,11 @@
-import { useEffect, useState, type FormEvent } from 'react';
-import { ArrowRight, CalendarDays, CircleHelp, RotateCcw, Settings2, Target, Wallet } from 'lucide-react';
-import type { GoalConfig, PlanMode } from '../types';
-import { fmtPercent, dailyRate, validateConfig } from '../lib/math';
-
-interface Props {
-  config: GoalConfig;
-  onApply: (next: GoalConfig) => void;
-  onResetResults: () => void;
-  hasResults: boolean;
-}
-
-export function GoalForm({ config, onApply, onResetResults, hasResults }: Props) {
-  const [startAmount, setStartAmount] = useState(String(config.startAmount));
-  const [targetAmount, setTargetAmount] = useState(String(config.targetAmount));
-  const [days, setDays] = useState(String(config.days));
-  const [date, setDate] = useState(config.startDate);
-  const [mode, setMode] = useState<PlanMode>(config.mode);
-  const [error, setError] = useState('');
-
-  useEffect(() => {
-    setStartAmount(String(config.startAmount)); setTargetAmount(String(config.targetAmount));
-    setDays(String(config.days)); setDate(config.startDate);
-    setMode(config.mode); setError('');
-  }, [config]);
-
-  const nextConfig: GoalConfig = {
-    startAmount: Number(startAmount.replace(',', '.')),
-    targetAmount: Number(targetAmount.replace(',', '.')),
-    days: Number(days), startDate: date, mode,
-  };
-  const quickRate = validateConfig(nextConfig) ? null : dailyRate(nextConfig.startAmount, nextConfig.targetAmount, nextConfig.days);
-
-  function apply(e: FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    const problem = validateConfig(nextConfig);
-    if (problem) { setError(problem); return; }
-    setError('');
-    onApply(nextConfig);
-  }
-
-  return <aside className="sidebar">
-    <div className="sidebar-brand">
-      <div className="brand-mark"><svg width="26" height="26" viewBox="0 0 26 26" fill="none"><path d="M3 20L9 14L13 17L23 6" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round"/><path d="M17 6H23V12" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round"/></svg></div>
-      <div><div className="brand-name">Yield<span>Pilot</span></div><div className="brand-desc">FINANCIAL GOAL PLANNER</div></div>
-    </div>
-    <div className="sidebar-separator" />
-    <div className="settings-heading"><div className="section-icon"><Settings2 size={17}/></div><div><h2>Настройки цели</h2><p>Сформируйте свой план</p></div></div>
-    <form className="settings-form" onSubmit={apply}>
-      <label className="field"><span className="field-label"><Wallet size={15}/> Начальная сумма</span><div className="input-wrap"><input aria-label="Начальная сумма" type="number" min="0.01" max="1000000000000" step="any" value={startAmount} onChange={e=>setStartAmount(e.target.value)} /></div></label>
-      <label className="field"><span className="field-label"><Target size={15}/> Целевая сумма</span><div className="input-wrap"><input aria-label="Целевая сумма" type="number" min="0.01" max="1000000000000" step="any" value={targetAmount} onChange={e=>setTargetAmount(e.target.value)} /></div></label>
-      <label className="field"><span className="field-label"><CalendarDays size={15}/> Срок (дней)</span><div className="input-wrap"><input aria-label="Количество дней" type="number" min="1" max="730" step="1" value={days} onChange={e=>setDays(e.target.value)} /><span>дней</span></div></label>
-      <label className="field"><span className="field-label"><CalendarDays size={15}/> Начало плана</span><div className="input-wrap"><input aria-label="Дата начала" type="date" value={date} onChange={e=>setDate(e.target.value)} /></div></label>
-      <div className="mode-group"><span className="field-label"><RotateCcw size={15}/> Режим пересчёта</span><div className="mode-control" role="group" aria-label="Режим пересчёта"><button type="button" className={mode==='adaptive'?'selected':''} onClick={()=>setMode('adaptive')}>Адаптивный</button><button type="button" className={mode==='fixed'?'selected':''} onClick={()=>setMode('fixed')}>Фиксированный</button></div><p className="field-hint">{mode === 'adaptive' ? 'После результата дня цель на оставшиеся дни пересчитается.' : 'Дневные суммы остаются из первоначального плана.'}</p></div>
-      {error && <div className="form-error" role="alert">{error}</div>}
-      <button type="submit" className="primary-btn full">Рассчитать план <ArrowRight size={17}/></button>
-      <div className="form-preview"><span>Расчётный рост за день</span><strong>{quickRate === null ? '—' : fmtPercent(quickRate, 4)}</strong></div>
-    </form>
-    <div className="sidebar-separator lower" />
-    <div className="tip-card"><div className="tip-icon"><CircleHelp size={17}/></div><div><h3>Как работает план?</h3><p>Каждый день фиксируйте фактическую прибыль или убыток. Адаптивный план пересчитает необходимую доходность для оставшихся дней.</p></div></div>
-    {hasResults && <button className="reset-inline" type="button" onClick={onResetResults}><RotateCcw size={15}/> Сбросить результаты дней</button>}
-    <div className="sidebar-bottom"><span className="online-dot"/> Данные сохраняются в этом браузере <span className="version">v1.0.1</span></div>
-  </aside>;
-}
+import {useState} from 'react';
+import type {Goal,GoalMode} from '../domain/types';
+import {today,validateGoal} from '../domain/finance';
+import {DEFAULT_STAKE_CONFIG} from '../domain/stakes';
+import {makeId} from '../state/store';
+import {Button,Field,Form,Modal,useNotify} from './UI';
+const week=[{n:1,label:'Пн'},{n:2,label:'Вт'},{n:3,label:'Ср'},{n:4,label:'Чт'},{n:5,label:'Пт'},{n:6,label:'Сб'},{n:0,label:'Вс'}];
+const blank=():Goal=>({id:makeId(),name:'',startAmount:100,targetAmount:1000,days:30,startDate:today(),mode:'adaptive',weekdays:[0,1,2,3,4,5,6],results:{},stakeConfig:{...DEFAULT_STAKE_CONFIG,manualOverrides:{}},createdAt:new Date().toISOString()});
+export function GoalForm({existing,onSave,onClose}:{existing?:Goal;onSave:(g:Goal)=>void;onClose:()=>void}){const [g,setG]=useState<Goal>(()=>existing?{...existing,weekdays:[...existing.weekdays]}:blank());const notify=useNotify();function change<K extends keyof Goal>(key:K,val:Goal[K]){setG(s=>({...s,[key]:val}))}
+const save=()=>{const err=validateGoal(g);if(err){notify(err,'error');return;}if(existing&&Object.keys(existing.results).length&&(existing.startAmount!==g.startAmount||existing.targetAmount!==g.targetAmount||existing.days!==g.days||existing.startDate!==g.startDate||existing.weekdays.join()!==g.weekdays.join())){if(!confirm('Изменение суммы, срока, дат цели удалит дневные результаты этой цели. Продолжить?'))return;g.results={};}onSave(g);onClose()};
+return <Modal title={existing?'Редактировать цель':'Новая торговая цель'} subtitle="Гибкий план с ежедневным прогрессом" onClose={onClose} wide><Form onSubmit={save}><div className="form-grid"><Field label="Название"><input maxLength={120} value={g.name} placeholder="Например, Торговый счёт" onChange={e=>change('name',e.target.value)}/></Field><Field label="Начальная сумма"><input type="number" step="0.01" min="0.01" value={g.startAmount} onChange={e=>change('startAmount',Number(e.target.value))}/></Field><Field label="Целевая сумма"><input type="number" step="0.01" min="0.01" value={g.targetAmount} onChange={e=>change('targetAmount',Number(e.target.value))}/></Field><Field label="Количество плановых дней"><input type="number" min="1" max="730" step="1" value={g.days} onChange={e=>change('days',Number(e.target.value))}/></Field><Field label="Дата начала"><input type="date" value={g.startDate} onChange={e=>change('startDate',e.target.value)}/></Field><Field label="Режим"><select value={g.mode} onChange={e=>change('mode',e.target.value as GoalMode)}><option value="adaptive">Адаптивный — пересчёт после каждого дня</option><option value="fixed">Фиксированный — исходные дневные цели</option></select></Field><div className="field weekday-field"><span>Плановые дни недели</span><div className="week-selector">{week.map(d=><button type="button" key={d.n} className={g.weekdays.includes(d.n)?'chosen':''} onClick={()=>change('weekdays',g.weekdays.includes(d.n)?g.weekdays.filter(n=>n!==d.n):[...g.weekdays,d.n].sort())}>{d.label}</button>)}</div><small>Срок указывается в выбранных рабочих днях</small></div></div><div className="note-block">{'Сложный процент рассчитывает необходимую ежедневную доходность. Это математический план, а не прогноз прибыли.'}</div><div className="form-actions"><Button variant="secondary" onClick={onClose}>Отмена</Button><Button type="submit">{existing?'Сохранить изменения':'Создать цель'}</Button></div></Form></Modal>}
