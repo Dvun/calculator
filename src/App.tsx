@@ -72,7 +72,6 @@ function AppContent({user,showImport,onImport,onRejectImport}:{user:User;showImp
     {!compact&&selectedGoal&&sidebarPlan&&<div className="sidebar-calculator" aria-label={`Калькулятор ставок для цели ${selectedGoal.name}`}>
      <StakePlanner key={selectedGoal.id} goal={selectedGoal} plan={sidebarPlan} variant="sidebar"/>
     </div>}
-    <div className="sidebar-bottom"><div className="privacy-label"><Cloud size={17}/>{!compact&&<span>Облачное хранилище</span>}</div>{!compact&&<small>Данные синхронизированы с Firebase. Каждый аккаунт хранит свои цели.</small>}</div>
    </div>
   </aside>
   <div className="app-body">
