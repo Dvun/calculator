@@ -1,6 +1,7 @@
 import {create} from 'zustand';
 import type {DataState,Goal,JournalEntry,Settings,StakeConfig} from '../domain/types';
 import {normalizeStakeConfig} from '../domain/stakes';
+import {normalizeJournalTags} from '../domain/journalTags';
 import {buildGoalPlan,completedGoalDates,round,validDate,validateGoal} from '../domain/finance';
 import {initialData,uuid} from './initial';
 
@@ -26,7 +27,7 @@ export function sanitizeData(raw:unknown):DataState|null{
  const dateSets=new Map(goals.map(g=>[g.id,new Set(completedGoalDates(g))]));
  const journal:JournalEntry[]=[];
  for(const j of raw.journal){if(!object(j)||typeof j.id!=='string'||typeof j.goalId!=='string'||typeof j.date!=='string'||!validDate(j.date)||!dateSets.get(j.goalId)?.has(j.date)||typeof j.title!=='string'||typeof j.note!=='string')continue;
-  journal.push({id:j.id.slice(0,100),goalId:j.goalId,date:j.date,title:j.title.slice(0,200),note:j.note.slice(0,20000),mood:['great','good','neutral','low'].includes(String(j.mood))?j.mood as JournalEntry['mood']:'neutral',discipline:([1,2,3,4,5].includes(Number(j.discipline))?j.discipline:3) as JournalEntry['discipline'],createdAt:typeof j.createdAt==='string'?j.createdAt:new Date().toISOString()});
+  journal.push({id:j.id.slice(0,100),goalId:j.goalId,date:j.date,title:j.title.slice(0,200),note:j.note.slice(0,20000),tags:normalizeJournalTags(j.tags),mood:['great','good','neutral','low'].includes(String(j.mood))?j.mood as JournalEntry['mood']:'neutral',discipline:([1,2,3,4,5].includes(Number(j.discipline))?j.discipline:3) as JournalEntry['discipline'],createdAt:typeof j.createdAt==='string'?j.createdAt:new Date().toISOString()});
  }
  const settings:Settings=object(raw.settings)?{compact:raw.settings.compact!==false,firstDayMonday:raw.settings.firstDayMonday!==false}:initialData().settings;
  const activeGoalId=typeof raw.activeGoalId==='string'&&goals.some(g=>g.id===raw.activeGoalId)?raw.activeGoalId:goals[0]?.id??null;
@@ -50,7 +51,7 @@ export function legacyLocalCandidate():DataState|null{
 }
 interface Actions{
  setActiveGoal:(id:string|null)=>void;upsertGoal:(g:Goal)=>void;deleteGoal:(id:string)=>void;updateStakeConfig:(goalId:string,patch:Partial<StakeConfig>)=>void;
- recordDay:(goalId:string,day:number,value:number,note?:string)=>string|null;undoDay:(goalId:string,day:number)=>string|null;
+ recordDay:(goalId:string,day:number,value:number,note?:string)=>string|null;updateDayNote:(goalId:string,day:number,note:string)=>string|null;undoDay:(goalId:string,day:number)=>string|null;
  upsertJournal:(j:JournalEntry)=>string|null;deleteJournal:(id:string)=>void;
  updateSettings:(patch:Partial<Settings>)=>void;replaceData:(next:DataState)=>void;resetEverything:()=>void;
 }
@@ -61,8 +62,9 @@ export const usePlanner=create<PlannerStore>()((set,get)=>({...initialData(),
  upsertGoal:g=>set(s=>{const goals=s.goals.some(x=>x.id===g.id)?s.goals.map(x=>x.id===g.id?g:x):[...s.goals,g];const validDates=new Set(completedGoalDates(g));return {goals,activeGoalId:s.activeGoalId??g.id,journal:s.journal.filter(j=>j.goalId!==g.id||validDates.has(j.date))};}),
  deleteGoal:id=>set(s=>({goals:s.goals.filter(g=>g.id!==id),journal:s.journal.filter(j=>j.goalId!==id),activeGoalId:s.activeGoalId===id?s.goals.find(g=>g.id!==id)?.id??null:s.activeGoalId})),
  recordDay:(goalId,day,value,note)=>{const g=get().goals.find(x=>x.id===goalId);if(!g)return 'Цель не найдена.';if(!Number.isFinite(value)||Math.abs(value)>1e12)return 'Некорректная сумма.';const plan=buildGoalPlan(g);if(day>plan.completedDays+1||day<1||day>g.days)return 'Дни необходимо заполнять по порядку.';const next={...g.results,[day]:{value:round(value),note:note?.slice(0,3000),recordedAt:new Date().toISOString()}};let bal=g.startAmount;for(let d=1;d<=g.days&&next[d];d++){bal=round(bal+next[d].value);if(bal<0)return 'Баланс не может стать отрицательным.';}get().upsertGoal({...g,results:next});return null;},
+ updateDayNote:(goalId,day,note)=>{const g=get().goals.find(x=>x.id===goalId);if(!g)return 'Цель не найдена.';const result=g.results[day];if(!result)return 'Комментарий можно добавить только к завершённому дню.';const nextNote=note.trim().slice(0,3000);get().upsertGoal({...g,results:{...g.results,[day]:{...result,note:nextNote||undefined}}});return null;},
  undoDay:(goalId,day)=>{const g=get().goals.find(x=>x.id===goalId);if(!g)return 'Цель не найдена.';if(day!==buildGoalPlan(g).completedDays)return 'Можно отменить только последний завершённый день.';const results={...g.results};delete results[day];get().upsertGoal({...g,results});return null;},
- upsertJournal:j=>{const g=get().goals.find(x=>x.id===j.goalId);if(!g||!completedGoalDates(g).includes(j.date))return 'Запись можно создать только для завершённого торгового дня выбранной цели.';if(!j.title.trim()||!j.note.trim())return 'Заполни заголовок и описание.';set(s=>({journal:s.journal.some(x=>x.id===j.id)?s.journal.map(x=>x.id===j.id?j:x):[...s.journal,j]}));return null;},
+ upsertJournal:j=>{const g=get().goals.find(x=>x.id===j.goalId);if(!g||!completedGoalDates(g).includes(j.date))return 'Запись можно создать только для завершённого торгового дня выбранной цели.';if(!j.title.trim()||!j.note.trim())return 'Заполни заголовок и описание.';const safe={...j,tags:normalizeJournalTags(j.tags)};set(s=>({journal:s.journal.some(x=>x.id===j.id)?s.journal.map(x=>x.id===j.id?safe:x):[...s.journal,safe]}));return null;},
  deleteJournal:id=>set(s=>({journal:s.journal.filter(j=>j.id!==id)})),
  updateSettings:patch=>set(s=>({settings:{...s.settings,...patch}})),
  replaceData:next=>set(sanitizeData(next)??initialData()),resetEverything:()=>set(initialData()),

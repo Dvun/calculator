@@ -1,26 +1,43 @@
-import {useMemo,useState} from 'react';
-import {Plus,Target,Calendar,Check,Edit3,RotateCcw,Trash2,Search,ArrowUpRight} from 'lucide-react';
+import {useEffect,useMemo,useState} from 'react';
+import {Plus,Target,Calendar,Check,Edit3,RotateCcw,Trash2,Search,ArrowUpRight,MessageSquare} from 'lucide-react';
 import {usePlanner} from '../state/store';
 import {buildGoalPlan,num,pct,shortDate,signed} from '../domain/finance';
-import type {Goal,GoalRow} from '../domain/types';
+import type {Goal} from '../domain/types';
 import {GoalForm} from '../components/GoalForm';
-import {ResultForm} from '../components/ResultForm';
+import {InlineDayFact} from '../components/InlineDayFact';
+import {DayCommentPopover,type CommentAnchor} from '../components/DayCommentPopover';
 import {GoalGrowthChart} from '../components/Charts';
 import {Button,Confirm,DownloadTable,Empty,Metric,Pill,Section,useNotify} from '../components/UI';
 
 
 export default function Goals(){
- const {goals, activeGoalId, setActiveGoal, upsertGoal, deleteGoal, undoDay} = usePlanner();
+ const {goals, activeGoalId, setActiveGoal, upsertGoal, deleteGoal, undoDay, recordDay, updateDayNote} = usePlanner();
  const notify= useNotify();
  const [editing, setEditing] = useState<Goal|null>(null);
  const [createOpen, setCreateOpen] = useState(false);
- const [recordRow, setRecordRow] = useState<GoalRow|null>(null);
+ const [editingDay,setEditingDay] = useState<number|null>(null);
+ const [commentAnchor,setCommentAnchor] = useState<CommentAnchor|null>(null);
  const [confirmDel, setConfirmDel] = useState<Goal|null>(null);
  const [filter, setFilter] = useState<'all' | 'pending' | 'done'>('all');
  const [search, setSearch] = useState('');
  const selected= goals.find(g=> g.id === activeGoalId) ?? goals[0];
 
  const plan= useMemo(()=> selected ? buildGoalPlan(selected) : null, [selected]);
+ useEffect(()=>{setEditingDay(null);setCommentAnchor(null);},[selected?.id]);
+ const saveDayFact=(day:number,value:number):boolean=>{
+  if(!selected)return false;
+  const err=recordDay(selected.id,day,value,selected.results[day]?.note);
+  if(err){notify(err,'error');return false;}
+  notify(`Факт дня ${day} обновлён. Ожидайте синхронизации с облаком.`);
+  return true;
+ };
+ const saveDayComment=(day:number,note:string):boolean=>{
+  if(!selected)return false;
+  const err=updateDayNote(selected.id,day,note);
+  if(err){notify(err,'error');return false;}
+  notify(note.trim()?'Комментарий обновлён. Ожидайте синхронизации.':'Комментарий удалён. Ожидайте синхронизации.');
+  return true;
+ };
  const visible= plan?.rows.filter(r=>
      (filter === 'all' || (filter === 'pending' ?! r.completed:r.completed)) &&
      (String(r.day).includes(search.trim()) || r.date.includes(search.trim()))) ?? [];
@@ -89,7 +106,7 @@ export default function Goals(){
      subtitle="Заполняйте фактические результаты последовательно"
      action={<DownloadTable
          filename="yieldpilot-goal.csv"
-         rows={[["День", "Дата", "Баланс в начале", "Цель дня", "Дневной %", "Баланс по плану", "Факт", "Фактический баланс", "Статус"], ...plan.rows.map(r=> [r.day, r.date, r.openingBalance, r.targetProfit, r.targetRate === null ? '' : (r.targetRate * 100).toFixed(5), r.targetClose, r.actualProfit, r.actualClose, r.completed ? 'Выполнено' : 'Ожидает'])]}/>}>
+         rows={[["День", "Дата", "Баланс в начале", "Цель дня", "Дневной %", "Баланс по плану", "Факт", "Комментарий", "Статус"], ...plan.rows.map(r=> [r.day, r.date, r.openingBalance, r.targetProfit, r.targetRate === null ? '' : (r.targetRate * 100).toFixed(5), r.targetClose, r.actualProfit, selected.results[r.day]?.note??'', r.completed ? 'Выполнено' : r.active ? 'В работе' : 'Ожидает'])]}/>}>
   <div className="table-filters">
    <div className="segmented">{([['all', 'Все дни'], ['pending', 'Ожидают'], ['done', 'Выполнено']] as const).map(([v, l])=>
        <button key={v} className={filter === v ? 'active' : ''} onClick={()=> setFilter(v)}>{l}</button>)}
@@ -100,7 +117,18 @@ export default function Goals(){
    </div>
   </div>
   <div className="table-scroll">
-   <table>
+   <table className="goal-plan-table">
+    {/* Stable widths: inline editing the fact must never resize neighboring columns. */}
+    <colgroup>
+     <col className="goal-col-day" />
+     <col className="goal-col-start" />
+     <col className="goal-col-target" />
+     <col className="goal-col-rate" />
+     <col className="goal-col-plan" />
+     <col className="goal-col-fact" />
+     <col className="goal-col-comment" />
+     <col className="goal-col-status" />
+    </colgroup>
     <thead>
     <tr>
      <th>ДЕНЬ / ДАТА</th>
@@ -109,8 +137,8 @@ export default function Goals(){
      <th>РОСТ</th>
      <th>ПО ПЛАНУ</th>
      <th>ФАКТ +/-</th>
-     <th>СТАТУС</th>
-     <th>ДЕЙСТВИЕ</th>
+     <th className="comment-th">КОММЕНТАРИЙ</th>
+     <th className="status-th">СТАТУС</th>
     </tr>
     </thead>
     <tbody>{visible.map(r=>
@@ -122,16 +150,20 @@ export default function Goals(){
          <td className="positive" > {r.targetProfit === null ? '—' : `+${num(r.targetProfit)}`}</td>
          <td>{pct(r.targetRate,2)}</td>
          <td>{r.targetClose === null ? '—' : num(r.targetClose)}</td>
-         <td className={r.actualProfit === null ? 'muted' : r.actualProfit < 0 ?' negative' : 'positive'}>
-          {r.actualProfit === null ? '—' : signed(r.actualProfit)}</td>
-         <td>
-          <Pill tone={r.completed ? 'green' : r.active ? 'amber' : 'muted'}>
-           {r.completed ? 'Выполнено' : r.active ? 'В работе' : 'Ожидает'}</Pill>
+         <td className="day-fact-cell"><InlineDayFact row={r} editing={editingDay===r.day}
+           onEdit={()=>{setCommentAnchor(null);setEditingDay(r.day);}}
+           onCancel={()=>setEditingDay(null)}
+           onSave={value=>saveDayFact(r.day,value)}/></td>
+         <td className="day-comment-cell">
+          {r.completed?<button type="button" className={`day-comment-trigger ${selected.results[r.day]?.note?'has-note':''}`}
+           title={selected.results[r.day]?.note?'Просмотреть или изменить комментарий':'Добавить комментарий'}
+           aria-label={`Комментарий к дню ${r.day}`}
+           onClick={e=>{const rect=e.currentTarget.getBoundingClientRect();setEditingDay(null);setCommentAnchor({day:r.day,date:r.date,rect:{left:rect.left,right:rect.right,top:rect.top,bottom:rect.bottom}});}}>
+           <MessageSquare size={14}/>{selected.results[r.day]?.note&&<span className="comment-dot"/>}
+          </button>:<span className="muted">—</span>}
          </td>
-         <td>{r.completed ? <button className="small-link" onClick={()=> setRecordRow(r)}>Изменить</button> :
-             r.active ? <button className="small-link" onClick={()=> setRecordRow(r)}>Внести факт</button> :
-                 <span className="muted">—</span>}
-         </td>
+         <td className="day-status-cell"><Pill tone={r.completed ? 'green' : r.active ? 'amber' : 'muted'}>
+           {r.completed ? 'Выполнено' : r.active ? 'В работе' : 'Ожидает'}</Pill></td>
         </tr>)}
     </tbody>
    </table>{!visible.length && <Empty title="Ничего не найдено" description="Попробуйте другой фильтр."/>}
@@ -148,7 +180,9 @@ export default function Goals(){
  </>:<div className="goal-empty-layout"><Empty title="Пока нет торговых целей" description="Создайте первую цель, чтобы увидеть ежедневный план и калькулятор ставок в боковой панели." action={<Button onClick={()=>setCreateOpen(true)} icon={Plus}>Создать цель</Button>}/></div>}
  {createOpen&&<GoalForm onClose={()=>setCreateOpen(false)} onSave={g=>{upsertGoal(g);setActiveGoal(g.id);notify('Новая цель создана.')}}/>}
  {editing&&<GoalForm existing={editing} onClose={()=>setEditing(null)} onSave={g=>{upsertGoal(g);notify('Цель обновлена.')}}/>}
- {recordRow&&selected&&<ResultForm goal={selected} row={recordRow} onClose={()=>setRecordRow(null)}/>}
+ {commentAnchor&&selected&&<DayCommentPopover key={`${selected.id}:${commentAnchor.day}`} anchor={commentAnchor}
+   initial={selected.results[commentAnchor.day]?.note??''} onClose={()=>setCommentAnchor(null)}
+   onSave={note=>saveDayComment(commentAnchor.day,note)}/>} 
  {confirmDel&&<Confirm message={`Удалить цель «${confirmDel.name}» вместе с результатами, календарём и записями дневника? Это действие нельзя отменить.`} onCancel={()=>setConfirmDel(null)} onConfirm={()=>{deleteGoal(confirmDel.id);setConfirmDel(null);notify('Цель удалена.')}}/>}
  </>;
 }

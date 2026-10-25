@@ -1,7 +1,7 @@
 {
   "name": "yieldpilot",
   "private": true,
-  "version": "2.3.3",
+  "version": "2.3.7",
   "type": "module",
   "scripts": {
     "dev": "vite --host 0.0.0.0",

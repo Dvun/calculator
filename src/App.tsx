@@ -66,7 +66,6 @@ function AppContent({user,showImport,onImport,onRejectImport}:{user:User;showImp
    </div><button type="button" className="sidebar-collapse" onClick={()=>setCompact(v=>!v)} title="Свернуть меню" aria-label={compact?'Развернуть меню':'Свернуть меню'}>{compact?<ChevronRight size={17}/>:<ChevronLeft size={17}/>}</button></div>
    <div className="sidebar-scroll">
     <nav aria-label="Разделы приложения"><div className="nav-group">
-     {!compact&&<div className="nav-label">ТРЕЙДИНГ</div>}
      {NAV.map(item=><button key={item.key} type="button" className={`nav-link ${page===item.key?'active':''}`} onClick={()=>navigate(item.key)}><item.icon size={19}/>{!compact&&<span>{item.label}</span>}{!compact&&item.key==='goals'&&goalsCount>0&&<span className="nav-count">{goalsCount}</span>}</button>)}
     </div></nav>
     {!compact&&selectedGoal&&sidebarPlan&&<div className="sidebar-calculator" aria-label={`Калькулятор ставок для цели ${selectedGoal.name}`}>
