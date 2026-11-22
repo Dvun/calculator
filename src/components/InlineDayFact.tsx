@@ -1,45 +1,62 @@
 import {useEffect,useRef,useState} from 'react';
-import {Check,Plus,X} from 'lucide-react';
+import {Check,PencilLine,Plus,X} from 'lucide-react';
 import type {GoalRow} from '../domain/types';
-import {signed} from '../domain/finance';
+import {num,parseMoney} from '../domain/finance';
 
-/** Inline editor: no modal and no implicit save on blur. Zero and negative results are supported. */
-export function InlineDayFact({row,editing,onEdit,onCancel,onSave}:{
+interface InlineDayFactProps{
  row:GoalRow;
  editing:boolean;
+ /** Id of the element showing the derived day outcome, announced as the input's description. */
+ describedBy:string;
  onEdit:()=>void;
  onCancel:()=>void;
- onSave:(value:number)=>boolean;
-}){
+ /** Called on every keystroke with the parsed balance (null while the draft is not a valid amount). */
+ onDraftChange:(closeBalance:number|null)=>void;
+ onSave:(closeBalance:number)=>boolean;
+}
+
+/** Inline editor for the account balance at the end of a day. No modal and no implicit save on blur. */
+export function InlineDayFact({row,editing,describedBy,onEdit,onCancel,onDraftChange,onSave}:InlineDayFactProps){
  const [draft,setDraft]=useState('');
  const input=useRef<HTMLInputElement>(null);
  useEffect(()=>{
   if(!editing)return;
-  setDraft(row.actualProfit===null?'':String(row.actualProfit));
+  setDraft(row.actualClose===null?'':num(row.actualClose));
   const id=requestAnimationFrame(()=>{input.current?.focus();input.current?.select();});
   return()=>cancelAnimationFrame(id);
  },[editing,row.day]);
+ const change=(value:string)=>{
+  setDraft(value);
+  input.current?.setCustomValidity('');
+  onDraftChange(parseMoney(value));
+ };
  const save=()=>{
-  const cleaned=draft.trim().replace(',','.');
-  if(!/^-?(?:\d+(?:\.\d{0,2})?|\.\d{1,2})$/.test(cleaned)){
-   input.current?.setCustomValidity('Введите число с точностью до сотых, например -12,50 или 0.');
+  const amount=parseMoney(draft);
+  if(amount===null){
+   input.current?.setCustomValidity(draft.trim().startsWith('-')
+    ?'Баланс не может быть отрицательным.'
+    :'Введите баланс на конец дня, например 214,24.');
    input.current?.reportValidity();
    return;
   }
-  const amount=Number(cleaned);
-  if(!Number.isFinite(amount))return;
   if(onSave(amount))onCancel();
  };
  if(editing)return <div className="inline-fact-editor">
-  <input ref={input} type="text" inputMode="decimal" aria-label={`Факт за день ${row.day}`} value={draft}
-   placeholder="±0,00" maxLength={20} onChange={e=>{setDraft(e.target.value);e.target.setCustomValidity('');}}
+  <input ref={input} type="text" inputMode="decimal" aria-label={`Баланс на конец дня ${row.day}`}
+   aria-describedby={describedBy} title="Баланс счёта после закрытия дня" value={draft} maxLength={20}
+   placeholder={row.targetClose===null?'0,00':num(row.targetClose)}
+   onChange={e=>change(e.target.value)}
    onKeyDown={e=>{if(e.key==='Enter'){e.preventDefault();save();}if(e.key==='Escape'){e.preventDefault();onCancel();}}}/>
-  <button type="button" className="fact-icon-save" aria-label={`Сохранить факт дня ${row.day}`} title="Сохранить" onClick={save}><Check size={14}/></button>
+  <button type="button" className="fact-icon-save" aria-label={`Сохранить баланс дня ${row.day}`} title="Сохранить" onClick={save}><Check size={14}/></button>
   <button type="button" className="fact-icon-cancel" aria-label="Отменить ввод" title="Отмена" onClick={onCancel}><X size={14} strokeWidth={2}/></button>
  </div>;
  if(!row.active&&!row.completed)return <span className="muted">—</span>;
- return <button type="button" className={`fact-cell-trigger ${row.actualProfit===null?'fact-empty':row.actualProfit<0?'fact-loss':'fact-win'}`}
-  title={row.completed?'Нажмите, чтобы изменить фактический результат':'Нажмите, чтобы внести результат'}
-  aria-label={row.completed?`Изменить факт дня ${row.day}`:`Внести факт дня ${row.day}`}
-  onClick={onEdit}>{row.actualProfit===null?<><Plus size={13}/> Внести факт</>:signed(row.actualProfit)}</button>;
+ if(row.actualClose===null)return <button type="button" className="fact-cell-trigger fact-empty"
+  title="Укажите баланс после закрытия дня" aria-label={`Внести баланс на конец дня ${row.day}`} onClick={onEdit}>
+  <Plus size={13}/> Внести баланс
+ </button>;
+ return <button type="button" className="fact-cell-trigger fact-balance"
+  title="Нажмите, чтобы исправить баланс на конец дня" aria-label={`Изменить баланс на конец дня ${row.day}`} onClick={onEdit}>
+  {num(row.actualClose)}<PencilLine size={12} className="fact-edit-icon" aria-hidden/>
+ </button>;
 }

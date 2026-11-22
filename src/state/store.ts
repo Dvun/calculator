@@ -2,7 +2,7 @@ import {create} from 'zustand';
 import type {DataState,Goal,JournalEntry,Settings,StakeConfig} from '../domain/types';
 import {normalizeStakeConfig} from '../domain/stakes';
 import {normalizeJournalTags} from '../domain/journalTags';
-import {buildGoalPlan,completedGoalDates,round,validDate,validateGoal} from '../domain/finance';
+import {buildGoalPlan,completedGoalDates,dayDelta,MAX_AMOUNT,round,validDate,validateGoal} from '../domain/finance';
 import {initialData,uuid} from './initial';
 
 const scoped=typeof window==='undefined'?'/':window.location.pathname.replace(/\/+$/,'').replace(/\/index\.html$/,'')||'/';
@@ -51,7 +51,10 @@ export function legacyLocalCandidate():DataState|null{
 }
 interface Actions{
  setActiveGoal:(id:string|null)=>void;upsertGoal:(g:Goal)=>void;deleteGoal:(id:string)=>void;updateStakeConfig:(goalId:string,patch:Partial<StakeConfig>)=>void;
- recordDay:(goalId:string,day:number,value:number,note?:string)=>string|null;updateDayNote:(goalId:string,day:number,note:string)=>string|null;undoDay:(goalId:string,day:number)=>string|null;
+ recordDay:(goalId:string,day:number,value:number,note?:string)=>string|null;
+ /** Records the balance at the end of a day; the day's profit is derived and later days keep their closing balances. */
+ recordDayBalance:(goalId:string,day:number,closeBalance:number)=>string|null;
+ updateDayNote:(goalId:string,day:number,note:string)=>string|null;undoDay:(goalId:string,day:number)=>string|null;
  upsertJournal:(j:JournalEntry)=>string|null;deleteJournal:(id:string)=>void;
  updateSettings:(patch:Partial<Settings>)=>void;replaceData:(next:DataState)=>void;resetEverything:()=>void;
 }
@@ -62,6 +65,21 @@ export const usePlanner=create<PlannerStore>()((set,get)=>({...initialData(),
  upsertGoal:g=>set(s=>{const goals=s.goals.some(x=>x.id===g.id)?s.goals.map(x=>x.id===g.id?g:x):[...s.goals,g];const validDates=new Set(completedGoalDates(g));return {goals,activeGoalId:s.activeGoalId??g.id,journal:s.journal.filter(j=>j.goalId!==g.id||validDates.has(j.date))};}),
  deleteGoal:id=>set(s=>({goals:s.goals.filter(g=>g.id!==id),journal:s.journal.filter(j=>j.goalId!==id),activeGoalId:s.activeGoalId===id?s.goals.find(g=>g.id!==id)?.id??null:s.activeGoalId})),
  recordDay:(goalId,day,value,note)=>{const g=get().goals.find(x=>x.id===goalId);if(!g)return 'Цель не найдена.';if(!Number.isFinite(value)||Math.abs(value)>1e12)return 'Некорректная сумма.';const plan=buildGoalPlan(g);if(day>plan.completedDays+1||day<1||day>g.days)return 'Дни необходимо заполнять по порядку.';const next={...g.results,[day]:{value:round(value),note:note?.slice(0,3000),recordedAt:new Date().toISOString()}};let bal=g.startAmount;for(let d=1;d<=g.days&&next[d];d++){bal=round(bal+next[d].value);if(bal<0)return 'Баланс не может стать отрицательным.';}get().upsertGoal({...g,results:next});return null;},
+ recordDayBalance:(goalId,day,closeBalance)=>{
+  const g=get().goals.find(x=>x.id===goalId);
+  if(!g)return 'Цель не найдена.';
+  if(!Number.isFinite(closeBalance)||closeBalance<0||closeBalance>MAX_AMOUNT)return 'Баланс на конец дня должен быть числом не меньше нуля.';
+  const plan=buildGoalPlan(g);
+  if(day<1||day>g.days||day>plan.completedDays+1)return 'Дни необходимо заполнять по порядку.';
+  const close=round(closeBalance);
+  const updated={...g.results[day],value:dayDelta(plan.rows[day-1].openingBalance,close).profit,recordedAt:new Date().toISOString()};
+  const next=plan.rows[day];
+  const results=next?.completed&&next.actualClose!==null
+   ?{...g.results,[day]:updated,[day+1]:{...g.results[day+1],value:dayDelta(close,next.actualClose).profit}}
+   :{...g.results,[day]:updated};
+  get().upsertGoal({...g,results});
+  return null;
+ },
  updateDayNote:(goalId,day,note)=>{const g=get().goals.find(x=>x.id===goalId);if(!g)return 'Цель не найдена.';const result=g.results[day];if(!result)return 'Комментарий можно добавить только к завершённому дню.';const nextNote=note.trim().slice(0,3000);get().upsertGoal({...g,results:{...g.results,[day]:{...result,note:nextNote||undefined}}});return null;},
  undoDay:(goalId,day)=>{const g=get().goals.find(x=>x.id===goalId);if(!g)return 'Цель не найдена.';if(day!==buildGoalPlan(g).completedDays)return 'Можно отменить только последний завершённый день.';const results={...g.results};delete results[day];get().upsertGoal({...g,results});return null;},
  upsertJournal:j=>{const g=get().goals.find(x=>x.id===j.goalId);if(!g||!completedGoalDates(g).includes(j.date))return 'Запись можно создать только для завершённого торгового дня выбранной цели.';if(!j.title.trim()||!j.note.trim())return 'Заполни заголовок и описание.';const safe={...j,tags:normalizeJournalTags(j.tags)};set(s=>({journal:s.journal.some(x=>x.id===j.id)?s.journal.map(x=>x.id===j.id?safe:x):[...s.journal,safe]}));return null;},

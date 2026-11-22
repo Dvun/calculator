@@ -832,16 +832,17 @@ input[type=color]{width:64px;height:41px;padding:4px}
 /* YieldPilot 2.3.5: explicit column geometry is identical in view and edit modes. */
 .daily-plan .table-scroll table.goal-plan-table{
  width:100%;
- min-width:890px;
+ min-width:900px;
  table-layout:fixed;
 }
-.goal-plan-table .goal-col-day{width:12%}
-.goal-plan-table .goal-col-start{width:11%}
-.goal-plan-table .goal-col-target{width:12%}
-.goal-plan-table .goal-col-rate{width:8%}
-.goal-plan-table .goal-col-plan{width:12%}
-.goal-plan-table .goal-col-fact{width:20%}
-.goal-plan-table .goal-col-comment{width:13%}
+.goal-plan-table .goal-col-day{width:11%}
+.goal-plan-table .goal-col-start{width:10%}
+.goal-plan-table .goal-col-target{width:10%}
+.goal-plan-table .goal-col-rate{width:7%}
+.goal-plan-table .goal-col-plan{width:10%}
+.goal-plan-table .goal-col-fact{width:16%}
+.goal-plan-table .goal-col-outcome{width:13%}
+.goal-plan-table .goal-col-comment{width:11%}
 .goal-plan-table .goal-col-status{width:12%}
 .daily-plan .table-scroll tbody tr{transition:background-color .14s ease}
 .daily-plan .table-scroll tbody tr:hover{background:#1b302e}
@@ -852,6 +853,7 @@ input[type=color]{width:64px;height:41px;padding:4px}
 .daily-plan .table-scroll tbody tr.completed-row:hover{background:#1d372e}
 .daily-plan .table-scroll tbody td{vertical-align:middle}
 .daily-plan .table-scroll tbody td.day-fact-cell{min-width:0;padding:2px 6px}
+.daily-plan .table-scroll tbody td.day-outcome-cell{padding:8px 8px}
 .daily-plan .table-scroll thead th.comment-th,
 .daily-plan .table-scroll tbody td.day-comment-cell{text-align:center}
 .daily-plan .table-scroll thead th.status-th,
@@ -864,8 +866,29 @@ input[type=color]{width:64px;height:41px;padding:4px}
 }
 .fact-cell-trigger:hover,.fact-cell-trigger:focus-visible{background:#223c32;border-color:#396c54;outline:none}
 .fact-cell-trigger.fact-empty{color:#8bddbb;background:#1b362d;font-size:9px}
-.fact-cell-trigger.fact-win{color:#77efae}
-.fact-cell-trigger.fact-loss{color:#f19494}
+.fact-cell-trigger.fact-balance{color:#e9f3f0;font-size:11px}
+.fact-cell-trigger .fact-edit-icon{flex:none;color:#7fcfae;opacity:0;transition:opacity .14s ease}
+.fact-cell-trigger:hover .fact-edit-icon,.fact-cell-trigger:focus-visible .fact-edit-icon{opacity:1}
+/* Day outcome: derived from the closing balance, never typed directly. */
+.day-outcome{
+ display:grid;grid-template-columns:24px minmax(0,1fr);grid-template-rows:auto auto;
+ column-gap:8px;align-items:center;min-width:0;font-variant-numeric:tabular-nums;
+ transition:opacity .14s ease;
+}
+.day-outcome-icon{
+ grid-row:1 / span 2;display:grid;place-items:center;
+ width:24px;height:24px;border-radius:7px;border:1px solid transparent;
+}
+.daily-plan .table-scroll tbody td .day-outcome strong{color:inherit;font-size:11px;font-weight:800;line-height:1.2}
+.daily-plan .table-scroll tbody td .day-outcome small{color:inherit;opacity:.72;font-size:10px;margin-top:1px;line-height:1.2}
+.day-outcome-win{color:#77efae}
+.day-outcome-win .day-outcome-icon{background:#1c4535;border-color:#2f6a51}
+.day-outcome-loss{color:#f19494}
+.day-outcome-loss .day-outcome-icon{background:#3d2427;border-color:#6a3a3d}
+.day-outcome-flat{color:#9db4ba}
+.day-outcome-flat .day-outcome-icon{background:#1a2b30;border-color:#31494e}
+.day-outcome.is-preview{opacity:.82}
+.day-outcome.is-preview .day-outcome-icon{background:transparent;border-style:dashed;border-color:currentColor}
 /* Editor is strictly contained by the existing fact column. */
 .inline-fact-editor{
  display:grid;
@@ -956,7 +979,7 @@ input[type=color]{width:64px;height:41px;padding:4px}
  .goal-workspace-head{align-items:flex-start;gap:9px}
  .goal-workspace-title{gap:3px}
  .goal-header-actions{align-self:auto}
- .daily-plan .table-scroll table{min-width:890px}
+ .daily-plan .table-scroll table{min-width:900px}
 }
 
 .modal.journal-entry-modal{

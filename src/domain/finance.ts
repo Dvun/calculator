@@ -10,6 +10,22 @@ export const validDate=(s:string):boolean=>/^\d{4}-\d{2}-\d{2}$/.test(s)&&!Numbe
 export const num=(x:number,digits=2):string=>Number.isFinite(x)?new Intl.NumberFormat('ru-RU',{minimumFractionDigits:digits,maximumFractionDigits:digits}).format(x):'—';
 export const signed=(x:number):string=>`${x>0?'+':''}${num(x)}`;
 export const pct=(x:number|null,digits=2):string=>x===null||!Number.isFinite(x)?'—':`${num(x*100,digits)}%`;
+export const signedPct=(x:number|null,digits=2):string=>x===null||!Number.isFinite(x)?'—':`${x>0?'+':''}${pct(x,digits)}`;
+export const MAX_AMOUNT=1e12;
+const MONEY_PATTERN=/^(?:\d+(?:\.\d{0,2})?|\.\d{1,2})$/;
+/** Parses a non-negative amount typed by the user: comma or dot decimals, any spaces (incl. NBSP from ru-RU formatting) as thousands separators, at most 2 decimals. */
+export const parseMoney=(input:string):number|null=>{
+ const cleaned=input.trim().replace(/\s/g,'').replace(',','.');
+ if(!MONEY_PATTERN.test(cleaned))return null;
+ const amount=Number(cleaned);
+ return Number.isFinite(amount)&&amount<=MAX_AMOUNT?amount:null;
+};
+export interface DayDelta{profit:number;rate:number|null}
+/** Day result derived from the balances at the start and at the end of the day. */
+export const dayDelta=(opening:number,close:number):DayDelta=>{
+ const profit=round(close-opening)||0;
+ return {profit,rate:opening>0?profit/opening:null};
+};
 export const shortDate=(s:string):string=>new Intl.DateTimeFormat('ru-RU',{day:'numeric',month:'short',timeZone:'UTC'}).format(toDate(s));
 export const goalDates=(g:Pick<Goal,'startDate'|'days'|'weekdays'>):string[]=>{const days:string[]=[];const wd=g.weekdays.length?g.weekdays:[0,1,2,3,4,5,6];for(let i=0;i<g.days*8+10&&days.length<g.days;i++){const date=plusDays(g.startDate,i);if(wd.includes(toDate(date).getUTCDay()))days.push(date);}return days;};
 export const dailyRate=(start:number,end:number,days:number):number|null=>{if(days<=0||start<=0||end<=0)return null;return start>=end?0:Math.expm1(Math.log(end/start)/days);};
