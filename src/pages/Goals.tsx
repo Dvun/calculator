@@ -1,11 +1,12 @@
 import {useEffect,useMemo,useState} from 'react';
 import {Plus,Target,Calendar,Check,Edit3,RotateCcw,Trash2,Search,ArrowUpRight,MessageSquare} from 'lucide-react';
 import {usePlanner} from '../state/store';
-import {buildGoalPlan,dayDelta,num,pct,shortDate,signed,signedPct} from '../domain/finance';
-import type {Goal} from '../domain/types';
+import {buildGoalPlan,dayDelta,factDateWindow,num,pct,shortDate,signed,signedPct,today} from '../domain/finance';
+import type {Goal,GoalRow} from '../domain/types';
 import {GoalForm} from '../components/GoalForm';
 import {InlineDayFact} from '../components/InlineDayFact';
 import {DayOutcome} from '../components/DayOutcome';
+import {DayDateField,DayDateLabel,FactOpensOn} from '../components/DayDate';
 import {DayCommentPopover,type CommentAnchor} from '../components/DayCommentPopover';
 import {GoalGrowthChart} from '../components/Charts';
 import {Button,Confirm,DownloadTable,Empty,Metric,Pill,Section,useNotify} from '../components/UI';
@@ -18,28 +19,36 @@ export default function Goals(){
  const [createOpen, setCreateOpen] = useState(false);
  const [editingDay,setEditingDay] = useState<number|null>(null);
  const [draftClose,setDraftClose] = useState<number|null>(null);
+ const [draftDate,setDraftDate] = useState<string|null>(null);
  const [commentAnchor,setCommentAnchor] = useState<CommentAnchor|null>(null);
  const [confirmDel, setConfirmDel] = useState<Goal|null>(null);
  const [filter, setFilter] = useState<'all' | 'pending' | 'done'>('all');
  const [search, setSearch] = useState('');
  const selected= goals.find(g=> g.id === activeGoalId) ?? goals[0];
+ const now=today();
 
- const plan= useMemo(()=> selected ? buildGoalPlan(selected) : null, [selected]);
- /** The draft starts from the saved balance, so the outcome cell always mirrors what is in the input. */
- const startEditing=(day:number,savedClose:number|null)=>{setCommentAnchor(null);setDraftClose(savedClose);setEditingDay(day);};
- const stopEditing=()=>{setEditingDay(null);setDraftClose(null);};
+ const plan= useMemo(()=> selected ? buildGoalPlan(selected,now) : null, [selected,now]);
+ /** The next day to close, and whether it can be closed today: one trading day per date, so not right after closing one today. */
+ const activeDay=plan&&selected&&plan.completedDays<selected.days?plan.completedDays+1:null;
+ const activeWindow=selected&&activeDay!==null?factDateWindow(selected,activeDay,now):null;
+ const activeLocked=activeWindow!==null&&activeWindow.min>activeWindow.max;
+ /** The draft starts from the saved balance and date (today for a new day), so the row always mirrors what will be saved. */
+ const startEditing=(row:GoalRow)=>{setCommentAnchor(null);setDraftClose(row.actualClose);setDraftDate(row.completed?row.date:now);setEditingDay(row.day);};
+ const stopEditing=()=>{setEditingDay(null);setDraftClose(null);setDraftDate(null);};
  useEffect(()=>{stopEditing();setCommentAnchor(null);},[selected?.id]);
  const saveDayBalance=(day:number,closeBalance:number):boolean=>{
   const row=plan?.rows[day-1];
   if(!selected||!row)return false;
   const wasCompleted=row.completed,nextCompleted=plan.rows[day]?.completed===true;
-  const err=recordDayBalance(selected.id,day,closeBalance);
+  const date=draftDate??(wasCompleted?row.date:now);
+  const err=recordDayBalance(selected.id,day,closeBalance,date);
   if(err){notify(err,'error');return false;}
   const {profit,rate}=dayDelta(row.openingBalance,closeBalance);
   const outcome=`${signed(profit)} (${signedPct(rate)})`;
+  const redated=wasCompleted&&date!==row.date?` Дата дня: ${shortDate(date)} (была ${shortDate(row.date)}).`:'';
   notify(wasCompleted
-   ?`День ${day} исправлен: ${outcome}.${nextCompleted?` Итог дня ${day+1} пересчитан.`:''}`
-   :`День ${day} закрыт: ${outcome}.`,profit<0?'info':'success');
+   ?`День ${day} исправлен: ${outcome}.${redated}${nextCompleted?` Итог дня ${day+1} пересчитан.`:''}`
+   :`День ${day} закрыт ${shortDate(date)}: ${outcome}.`,profit<0?'info':'success');
   return true;
  };
  const saveDayComment=(day:number,note:string):boolean=>{
@@ -114,10 +123,10 @@ export default function Goals(){
  <Section
      className="daily-plan"
      title="План по дням"
-     subtitle="Вносите баланс на конец дня — прибыль или убыток посчитаются автоматически"
+     subtitle="Вносите баланс на конец дня — итог посчитается сам. Дата ставится по факту, у будущих дней она прогнозная (≈)"
      action={<DownloadTable
          filename="yieldpilot-goal.csv"
-         rows={[["День", "Дата", "Баланс в начале", "Цель дня", "Дневной %", "Баланс по плану", "Баланс на конец дня", "Итог дня", "Итог дня %", "Комментарий", "Статус"], ...plan.rows.map(r=> [r.day, r.date, r.openingBalance, r.targetProfit, r.targetRate === null ? '' : (r.targetRate * 100).toFixed(5), r.targetClose, r.actualClose, r.actualProfit, r.actualProfit !== null && r.openingBalance > 0 ? (r.actualProfit / r.openingBalance * 100).toFixed(2) : '', selected.results[r.day]?.note??'', r.completed ? 'Выполнено' : r.active ? 'В работе' : 'Ожидает'])]}/>}>
+         rows={[["День", "Дата (факт / прогноз)", "Баланс в начале", "Цель дня", "Дневной %", "Баланс по плану", "Баланс на конец дня", "Итог дня", "Итог дня %", "Комментарий", "Статус"], ...plan.rows.map(r=> [r.day, r.date, r.openingBalance, r.targetProfit, r.targetRate === null ? '' : (r.targetRate * 100).toFixed(5), r.targetClose, r.actualClose, r.actualProfit, r.actualProfit !== null && r.openingBalance > 0 ? (r.actualProfit / r.openingBalance * 100).toFixed(2) : '', selected.results[r.day]?.note??'', r.completed ? 'Выполнено' : r.active ? 'В работе' : 'Ожидает'])]}/>}>
   <div className="table-filters">
    <div className="segmented">{([['all', 'Все дни'], ['pending', 'Ожидают'], ['done', 'Выполнено']] as const).map(([v, l])=>
        <button key={v} className={filter === v ? 'active' : ''} onClick={()=> setFilter(v)}>{l}</button>)}
@@ -157,18 +166,22 @@ export default function Goals(){
     <tbody>{visible.map(r=>
         <tr key={r.day} className={r.active ? 'current-row' : r.completed ? 'completed-row' : ''}>
          <td> <strong>День {String(r.day).padStart(2,'0')}</strong>
-          <small>{shortDate(r.date)}</small>
+          {editingDay===r.day&&draftDate
+           ?<DayDateField day={r.day} value={draftDate} range={factDateWindow(selected,r.day,now)} today={now} onChange={setDraftDate}/>
+           :<DayDateLabel row={r} today={now}/>}
          </td>
          <td>{num(r.openingBalance)}</td>
          <td className="positive" > {r.targetProfit === null ? '—' : `+${num(r.targetProfit)}`}</td>
          <td>{pct(r.targetRate,2)}</td>
          <td>{r.targetClose === null ? '—' : num(r.targetClose)}</td>
-         <td className="day-fact-cell"><InlineDayFact row={r} editing={editingDay===r.day}
+         <td className="day-fact-cell">{r.active&&activeLocked&&activeWindow
+          ?<FactOpensOn day={r.day} opensOn={activeWindow.min} previousDate={selected.results[r.day-1]?.date} today={now}/>
+          :<InlineDayFact row={r} editing={editingDay===r.day}
            describedBy={`day-outcome-${r.day}`}
-           onEdit={()=>startEditing(r.day,r.actualClose)}
+           onEdit={()=>startEditing(r)}
            onCancel={stopEditing}
            onDraftChange={setDraftClose}
-           onSave={value=>saveDayBalance(r.day,value)}/></td>
+           onSave={value=>saveDayBalance(r.day,value)}/>}</td>
          <td className="day-outcome-cell"><DayOutcome id={`day-outcome-${r.day}`} row={r} editing={editingDay===r.day} draftClose={draftClose}/></td>
          <td className="day-comment-cell">
           {r.completed?<button type="button" className={`day-comment-trigger ${selected.results[r.day]?.note?'has-note':''}`}
